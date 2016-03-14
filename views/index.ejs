@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script type='text/javascript' src='./jquery.min.js'></script>
+    <script type='text/javascript' src='./socket.io/socket.io.js'></script>
+    <script type="text/javascript">
+      // document ready, for jquery
+      $(document).ready(function(){
+
+        // the all important io.connect, saves
+        // info about the socket server and connects
+        // clients
+        var socket = io.connect();
+
+        // global user
+        var current_user;
+
+        // get name function, prompts, saves username, and emits
+        function get_name(){
+          var new_user = prompt('What is your username?');
+          current_user = new_user;
+          socket.emit('create:name', {username: new_user});
+        }
+
+        // the initial invocation of get_name() for
+        // when users connect
+        get_name();
+
+        // get chat history
+        socket.on('send:all', function(data){
+          console.log(data);
+          $('#chat').append(data.history);
+        })
+
+        // failed name creation, no unique
+        socket.on('name:failed', function(data){
+          get_name();
+        })
+
+        // send single message and append it
+        socket.on('send:new_message', function(data){
+          $('#chat').append(data.new_message);
+        })
+
+        // logic for submitting the form, appending, forming it
+        // into a string, and emitting. Also note how we use
+        // jquery to pull the value out of the field, and how
+        // return false prevents the page from refreshing
+        $('#message_box').submit(function(){
+          var message = $('#message').val();
+          console.log(message);
+          var current_message = '<p>' + current_user + ': ' + message + '</p>';
+          $('#chat').append(current_message);
+          socket.emit('send:message', {message: current_message})
+          return false;
+        })
+
+      })
+
+    </script>
+  </head>
+  <body>
+    <h1>Welcome to an awesome Chatroom!</h1>
+    <div id='errors'></div>
+    <div id='chat'></div>
+    <form id='message_box'>
+      <input type='text' name='message' id='message'>
+      <input type='submit' name='submit' value='Say stuff in the Chatroom!'>
+    </form>
+
+  </body>
+</html>
